@@ -22,77 +22,41 @@ import java.util.concurrent.TimeoutException;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Inbox;
-import akka.actor.Props;
-import akka.actor.Terminated;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
-
 import com.mattguo.avionics.Altimeter;
-import com.mattguo.avionics.Plane;
-import com.mattguo.avionics.message.Msg;
 import com.mattguo.avionics.message.RateChange;
-import com.mattguo.avionics.message.StickBack;
 import com.mattguo.playakka.Messages.Greet;
 import com.mattguo.playakka.Messages.Greeting;
 import com.mattguo.playakka.Messages.WhoToGreet;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Inbox;
+import akka.actor.Props;
+import akka.actor.Terminated;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+
 public class Activator implements BundleActivator {
 
 	private ActorSystem system;
 
-	public void start(BundleContext context) {
+	@Override
+    public void start(BundleContext context) {
 		System.out.println("Starting the bundle");
-		initAkkaAvionics();
+		//initAkkaGreeter();
 		System.out.println("Started the bundle");
 	}
 
-	public void stop(BundleContext context) {
+	@Override
+    public void stop(BundleContext context) {
 		System.out.println("Stopping the bundle");
-		stopAkka();
+		//stopAkka();
 		System.out.println("Stopped the bundle");
 	}
 
-	void initAkkaAvionics() {
-		ClassLoader classLoader = ActorSystem.class.getClassLoader();
-		Config config = ConfigFactory.defaultReference(classLoader);
-		config.checkValid(ConfigFactory.defaultReference(classLoader), "akka");
-
-		system = ActorSystem.create("PlaneSimulation", config, classLoader);
-		System.out.println("PlaneSimulation started.");
-		try {
-			final ActorRef plane = system.actorOf(Props.create(Plane.class));
-
-			Timeout timeout = Timeout.apply(100, TimeUnit.MILLISECONDS);
-			Future<Object> future = Patterns.ask(plane, Msg.GiveMeControl,
-					timeout);
-			final ActorRef cs = (ActorRef) Await.result(future,
-					timeout.duration());
-			system.scheduler().scheduleOnce(
-					Duration.apply(200, TimeUnit.MILLISECONDS), () -> {
-						cs.tell(new StickBack(0.8), ActorRef.noSender());
-					}, system.dispatcher());
-			system.scheduler().scheduleOnce(
-					Duration.apply(1000, TimeUnit.MILLISECONDS), () -> {
-						cs.tell(new StickBack(0), ActorRef.noSender());
-					}, system.dispatcher());
-			system.scheduler().scheduleOnce(
-					Duration.apply(2000, TimeUnit.MILLISECONDS), () -> {
-						cs.tell(new StickBack(0.5), ActorRef.noSender());
-					}, system.dispatcher());
-		} catch (Exception e) {
-			System.out.println("Got a exception when running Avionics."
-					+ e.toString());
-			e.printStackTrace();
-		}
-	}
 
 	void initAkkaGreeter() {
 		try {

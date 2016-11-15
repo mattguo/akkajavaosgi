@@ -1,5 +1,7 @@
 package com.mattguo.avionics;
 
+import scala.PartialFunction;
+import scala.runtime.BoxedUnit;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.japi.pf.ReceiveBuilder;
@@ -14,10 +16,12 @@ public class ControlSurface extends AbstractLoggingActor {
 	public ControlSurface(ActorRef altimeter) {
 		this.altimeter = altimeter;
 		
-		this.receive(ReceiveBuilder.match(StickBack.class, msg -> {
+		PartialFunction<Object, BoxedUnit> recvRules = ReceiveBuilder.match(StickBack.class, msg -> {
 			altimeter.tell(new RateChange(msg.amount), self());
 		}).match(StickForward.class, msg -> {
 			altimeter.tell(new RateChange(-msg.amount), self());
-		}).build());
+		}).build();
+		
+		this.receive(recvRules);
 	}
 }

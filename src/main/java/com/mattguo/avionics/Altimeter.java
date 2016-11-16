@@ -5,19 +5,19 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.concurrent.TimeUnit;
 
-import scala.PartialFunction;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
+import com.mattguo.avionics.message.AltitudeUpdate;
+import com.mattguo.avionics.message.RateChange;
+
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.ReceiveBuilder;
-import com.mattguo.avionics.message.AltitudeUpdate;
+import scala.PartialFunction;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.duration.Duration;
+import scala.runtime.BoxedUnit;
 
-import com.mattguo.avionics.message.RateChange;
-
-public class Altimeter extends EventSource {
+public class Altimeter extends AbstractLoggingActor {
 	final static Object tickMsg = new Object();
 
 	// The maximum ceiling of our plane in 'feet'
@@ -31,7 +31,10 @@ public class Altimeter extends EventSource {
 
 	Temporal lastTick = now();
 
+	private final EventSource evt;
+
 	public Altimeter() {
+		evt = new ProductionEventSource(self());
 		final ActorSystem system = this.context().system();
 		ExecutionContext defaultExec = system.dispatcher();
 		system.scheduler().schedule(Duration.Zero(),
@@ -50,9 +53,9 @@ public class Altimeter extends EventSource {
 					long millis = ChronoUnit.MILLIS.between(lastTick, tick);
 					altitude = altitude + rateOfClimb * millis / 60000;
 					lastTick = tick;
-					sendEvent(new AltitudeUpdate(altitude));
+					evt.sendEvent(new AltitudeUpdate(altitude));
 				}).build();
-		this.receive(eventSourceReceive.orElse(altimeterReceive));
+		this.receive(evt.eventSourceReceive().orElse(altimeterReceive));
 	}
 
 	private Temporal now() {

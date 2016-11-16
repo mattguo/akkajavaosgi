@@ -33,7 +33,7 @@ public class EntryComponent {
     public void activate() {
 	    ActorSystem system = akka.system();
 	    try {
-            final ActorRef plane = system.actorOf(Props.create(Plane.class));
+            final ActorRef plane = system.actorOf(Props.create(Plane.class), "plane");
 
             Timeout timeout = Timeout.apply(100, TimeUnit.MILLISECONDS);
             Future<Object> future = Patterns.ask(plane, Msg.GiveMeControl,

@@ -29,6 +29,7 @@ public class AkkaEnvImpl implements AkkaEnv {
     Logger logger = LoggerFactory.getLogger(AkkaEnvImpl.class);
 
     private ActorSystem sys;
+    private Config config;
 
     @Activate
     public void activate(ComponentContext cc, BundleContext bc, Map<String,Object> config) {
@@ -46,11 +47,11 @@ public class AkkaEnvImpl implements AkkaEnv {
     }
 
     protected void initActorSystem(String systemName) {
-        ClassLoader classLoader = ActorSystem.class.getClassLoader();
-        Config config = ConfigFactory.defaultReference(classLoader);
-        config.checkValid(ConfigFactory.defaultReference(classLoader), "akka");
+        ClassLoader akkaClassLoader = ActorSystem.class.getClassLoader();
+        Config localConfig = ConfigFactory.load(AkkaEnvImpl.class.getClassLoader());
+        config = localConfig.withFallback(ConfigFactory.defaultReference(akkaClassLoader));
 
-        sys = ActorSystem.create(systemName, config, classLoader);
+        sys = ActorSystem.create(systemName, config, akkaClassLoader);
         logger.info("{} started.", systemName);
     }
 
@@ -67,6 +68,11 @@ public class AkkaEnvImpl implements AkkaEnv {
     @Override
     public ActorSystem system() {
         return this.sys;
+    }
+
+    @Override
+    public Config config() {
+        return config;
     }
 
     private static FiniteDuration msDuration(int milliseconds) {
